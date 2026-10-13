@@ -1,6 +1,14 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const dns = require("dns");
 require("dotenv").config();
+
+// Configure public DNS servers to resolve mongodb+srv records reliably on Windows
+try {
+  dns.setServers(["8.8.8.8", "1.1.1.1"]);
+} catch (e) {
+  console.warn("DNS server setup notice:", e.message);
+}
 
 const User = require("./models/User");
 

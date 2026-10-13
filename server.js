@@ -36,28 +36,36 @@ const allowedOrigins = [
   ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : []),
   "http://localhost:5173",
   "http://localhost:5174",
+  "http://localhost:4173",
   "http://localhost:3000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+  "http://127.0.0.1:4173",
+  "http://127.0.0.1:3000",
 ]
   .filter(Boolean)
   .map((origin) => origin.trim().replace(/\/+$/, ""));
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow non-browser requests (e.g. mobile apps, curl, Postman, server-to-server health checks)
+    // Allow non-browser requests (e.g. mobile apps, curl, Postman, health check pings)
     if (!origin) return callback(null, true);
-
-    // If no specific production origin is set, or wildcard is specified, allow requests
-    if (allowedOrigins.length === 0 || allowedOrigins.includes("*")) {
-      return callback(null, true);
-    }
 
     const normalizedOrigin = origin.trim().replace(/\/+$/, "");
 
-    // Check exact match or Vercel preview deployments
+    // If wildcard origin is set in ALLOWED_ORIGINS, allow all
+    if (allowedOrigins.includes("*")) {
+      return callback(null, true);
+    }
+
+    // Check exact match, any Netlify deployment (*.netlify.app), Vercel (*.vercel.app), or Render
     const isAllowed =
       allowedOrigins.includes(normalizedOrigin) ||
-      (normalizedOrigin.endsWith(".vercel.app") &&
-        allowedOrigins.some((o) => o.includes("vercel.app")));
+      normalizedOrigin.endsWith(".netlify.app") ||
+      /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.netlify\.app$/i.test(normalizedOrigin) ||
+      normalizedOrigin.endsWith(".vercel.app") ||
+      /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.vercel\.app$/i.test(normalizedOrigin) ||
+      normalizedOrigin.endsWith(".onrender.com");
 
     if (isAllowed) {
       return callback(null, true);
@@ -141,7 +149,7 @@ app.use(errorHandler);
 
 // ================= SERVER =================
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT} bound to 0.0.0.0`);
